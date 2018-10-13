@@ -1,6 +1,7 @@
 import pandas as pd
 import data.ScoreCalculator as sc
 import data.MongoDAO as md
+from sklearn.preprocessing import Imputer
 import os
 
 def get_all():
@@ -29,8 +30,10 @@ def get_marks(subjects, terms = [1,2,3,4,5,6,7,8,9]):
         for term in terms:
             columns.append(subject + "_" + str(term));
 
-    return get_all()[columns]
-
+    df = get_all()[columns]
+    
+    return df
+    
 def get_demographics(features=["scholarship","f_edu","m_edu","s_num","s_edu","tution"]):
     df = get_all()
     return  df[features]
@@ -44,58 +47,18 @@ def get_lci():
     for i in range(1,21):
         features.append("Lci_"+str(i))
 
-    return  df[features]
+    df = df[features]
+    
+    return df
 
-def handle_missing_values(dataframe, how='0', is_nan = False):
+def put_missing_values(dataframe):
 
-    """
-    Manages absent values in a data frame
 
-    Parameters
-        ----------
-        dataframe : dataframe to be modified
-        how : {'fill_0', 'fill_prev_avg', 'fill_this_avg', 'drop'}
-    """
-    if(not(is_nan)):
-
-        if(how == '0'):
-             dataframe.replace(-1, 0, inplace=True);
-
-        elif(how == '?'):
-            dataframe.replace(-1, '?', inplace=True);
-
-    #     elif(how == 'fill_prev_avg'):
-    #         # put previous average here for the subject
-    #
-    #     elif(how == 'fill_this_avg'):
-    #         # put average mark for this term
-    #
-        elif(how == 'drop'):
-             columns = list(dataframe.columns.values);
-
-             for column in columns:
-                dataframe = dataframe[dataframe[column] != 0]
-
-    else :
-
-        if (how == '0'):
-            dataframe.fillna(0, inplace=True);
-
-        elif (how == '-1'):
-            dataframe.fillna(-1, inplace=True);
-
-        elif (how == '?'):
-            dataframe.fillna('?', inplace=True);
-            # dataframe.astype(object).fillna('?', inplace=True);
-
-        #     elif(how == 'fill_prev_avg'):
-        #         # put previous average here for the subject
-        #
-        #     elif(how == 'fill_this_avg'):
-        #         # put average mark for this term
-        #
-        elif (how == 'drop'):
-            dataframe.dropna(inplace=True);
+    dataframe.replace('-1', -1, inplace=True);
+    dataframe.replace('#N/A', -1, inplace=True);
+    dataframe.replace('', -1, inplace=True);
+    dataframe.fillna(-1, inplace=True);
+    
 
     return dataframe;
 
@@ -127,12 +90,46 @@ def discretize_marks(dataframe, subject):
 
     return dataframe;
 
+def generate_dataset (subjects, discretize = 'no'):
 
+    df_marks = get_marks(subjects)
+    df_demo = get_demographics()
+    df_lci = get_lci()
+    
+    
+    
+    df_join = df_marks.join(df_demo).join(df_lci)
+    
+    df = put_missing_values(df_join) #replace missing values with -1
+    
+    for subject in subjects :
+        tution_score = sc.getTutionScore(df, subject);
+        tution_score_series = pd.Series(tution_score);
+        df[subject + "_tution"] = tution_score_series;
+    df = df.drop('tution', axis=1)
+        
+    sibiling_score = sc.getSibilingEducationScore(df);
+    sibiling_score_series = pd.Series(sibiling_score);
+    df["s_edu"] = sibiling_score_series;
+    
+    df = df.apply(pd.to_numeric, errors='ignore')
+    
+    #imp = Imputer(missing_values=-1, strategy='mean', axis=1)
+    #df = pd.DataFrame(imp.fit_transform(df))
+    
+    return df
+
+def df_to_numeric(dataframe):
+    
+    columns = list(dataframe)
+    
+    
+    
 
 def generate_dataset_orange(subject, tution_score = "no", discretize = 'no'):
 
-    features = ["Index No.", subject, subject + ".1", subject + ".2", subject + ".3", subject + ".4", subject + ".5",
-                subject + ".6", subject + ".7", subject + ".8", "scholarship", "f_edu", "m_edu", "s_num", "s_edu",
+    features = [subject + "_1", subject + "_2", subject + "_3", subject + "_4", subject + "_5",
+                subject + "_6", subject + "_7", subject + "_8", subject + "_9", "scholarship", "f_edu", "m_edu", "s_num", "s_edu",
                 "tution", ]
 
     for i in range(1, 21):

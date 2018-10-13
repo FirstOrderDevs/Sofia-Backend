@@ -6,7 +6,7 @@ def getTutionScore(dataframe, subject):
     for entry in tution_list:
         score = 0
 
-        if(entry != '?'):
+        if(entry != -1):
 
             entry = entry.split(",")
 
@@ -35,13 +35,14 @@ def getSibilingEducationScore(dataframe):
     for entry in sibilings_list:
         score = 0
 
-        if(entry != '?'):
+        if(entry != -1):
 
             if(len(entry) != 1):
                 entry = entry.split(",")
 
                 for i in range(0,len(entry)):
-                    score = score + int(entry[i])
+                    if(entry[i] != ''):
+                        score = score + int(entry[i])
 
                 scores.append(score+1)
 
