@@ -33,6 +33,6 @@ def get_data_frame():
 
 # insert_csv('sirisaman_full.csv')
 # insert_csv('southland_full.csv')
-df = get_data_frame()
-print(df)
+#df = get_data_frame()
+#print(df)
 
