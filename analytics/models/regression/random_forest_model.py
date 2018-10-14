@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-import xgboost
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.grid_search import GridSearchCV
 import data.DataParser as dp
 from sklearn.externals import joblib
@@ -15,21 +15,20 @@ for subject in subjects :
     train = df.loc[:, df.columns != subject+'_9']
     
     
-    params_grid = {
-            'max_depth' : [1,2,3],
-            'n_estimators' : [5,10,25,50,75,100],
-            'learning_rate' : np.linspace(0,1,10)
-            }
+    param_grid = {
+        'bootstrap': [True],
+        'max_depth': [80, 90, 100, 110],
+        'max_features': [2, 3],
+        'min_samples_leaf': [3, 4, 5],
+        'min_samples_split': [8, 10, 12],
+        'n_estimators': [100, 200, 300, 1000]
+    }
     
-    params_fixed = {'objective' : 'reg:linear',
-                    'silent' : True,
-                    'missing' : -1}
-    
-    grid = GridSearchCV(estimator = xgboost.XGBRegressor(**params_fixed),
-                        param_grid = params_grid,
+    grid = GridSearchCV(estimator = RandomForestRegressor(),
+                        param_grid = param_grid,
                         cv=10,
                         scoring='neg_mean_squared_error')
     
     grid.fit(train,target)
     
-    joblib.dump(grid.best_estimator_, 'joblibs/'+subject+'_xgb.joblib') 
+    joblib.dump(grid.best_estimator_, 'joblibs/rnd'+subject+'_xgb.joblib') 
